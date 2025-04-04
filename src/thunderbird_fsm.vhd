@@ -176,9 +176,9 @@ begin
                 o_lights_L <= "111"; -- LA + LB + LC
 
             when R1 =>
-                o_lights_R <= "100"; -- RA
+                o_lights_R <= "001"; -- RA
             when R2 =>
-                o_lights_R <= "110"; -- RA + RB
+                o_lights_R <= "011"; -- RA + RB
             when R3 =>
                 o_lights_R <= "111"; -- RA + RB + RC
 
