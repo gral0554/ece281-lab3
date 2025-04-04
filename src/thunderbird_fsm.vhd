@@ -36,18 +36,18 @@
 --|					can be changed by the inputs
 --|					
 --|
---|                 xxx State Encoding key
+--|                 One-Hot State Encoding key
 --|                 --------------------
 --|                  State | Encoding
 --|                 --------------------
---|                  OFF   | 
---|                  ON    | 
---|                  R1    | 
---|                  R2    | 
---|                  R3    | 
---|                  L1    | 
---|                  L2    | 
---|                  L3    | 
+--|                  OFF   | 1 0 0 0 0 0 0 0
+--|                  ON    | 0 1 0 0 0 0 0 0
+--|                  R1    | 0 0 1 0 0 0 0 0
+--|                  R2    | 0 0 0 1 0 0 0 0
+--|                  R3    | 0 0 0 0 1 0 0 0
+--|                  L1    | 0 0 0 0 0 1 0 0
+--|                  L2    | 0 0 0 0 0 0 1 0
+--|                  L3    | 0 0 0 0 0 0 0 1
 --|                 --------------------
 --|
 --|
@@ -85,24 +85,112 @@ library ieee;
   use ieee.std_logic_1164.all;
   use ieee.numeric_std.all;
  
-entity thunderbird_fsm is 
---  port(
-	
---  );
+entity thunderbird_fsm is
+    port (
+        i_clk, i_reset  : in    std_logic;
+        i_left, i_right : in    std_logic;
+        o_lights_L      : out   std_logic_vector(2 downto 0);
+        o_lights_R      : out   std_logic_vector(2 downto 0)
+    );
 end thunderbird_fsm;
 
 architecture thunderbird_fsm_arch of thunderbird_fsm is 
 
 -- CONSTANTS ------------------------------------------------------------------
-  
+    type state_label is (OFF, L1, L2, L3, R1, R2, R3, HAZARD);
+    signal current_state, next_state : state_label;
 begin
 
 	-- CONCURRENT STATEMENTS --------------------------------------------------------	
-	
+	    process(i_clk)
+    begin
+        if rising_edge(i_clk) then
+            if i_reset = '1' then
+                current_state <= OFF;
+            else
+                current_state <= next_state;
+            end if;
+        end if;
+    end process;
     ---------------------------------------------------------------------------------
 	
 	-- PROCESSES --------------------------------------------------------------------
-    
+        -- Next State Logic
+    process(current_state, i_left, i_right)
+    begin
+        case current_state is
+            when OFF =>
+                if i_left = '1' and i_right = '1' then
+                    next_state <= HAZARD;
+                elsif i_left = '1' then
+                    next_state <= L1;
+                elsif i_right = '1' then
+                    next_state <= R1;
+                else
+                    next_state <= OFF;
+                end if;
+
+            when L1 =>
+                next_state <= L2;
+            when L2 =>
+                next_state <= L3;
+            when L3 =>
+                if i_left = '1' and i_right = '1' then
+                    next_state <= HAZARD;
+                elsif i_left = '1' then
+                    next_state <= L1;
+                else
+                    next_state <= OFF;
+                end if;
+
+            when R1 =>
+                next_state <= R2;
+            when R2 =>
+                next_state <= R3;
+            when R3 =>
+                if i_left = '1' and i_right = '1' then
+                    next_state <= HAZARD;
+                elsif i_right = '1' then
+                    next_state <= R1;
+                else
+                    next_state <= OFF;
+                end if;
+
+            when HAZARD =>
+                next_state <= OFF;
+        end case;
+    end process;
+
+    -- Output Logic
+    process(current_state)
+    begin
+        o_lights_L <= "000";
+        o_lights_R <= "000";
+
+        case current_state is
+            when L1 =>
+                o_lights_L <= "001"; -- LA
+            when L2 =>
+                o_lights_L <= "011"; -- LA + LB
+            when L3 =>
+                o_lights_L <= "111"; -- LA + LB + LC
+
+            when R1 =>
+                o_lights_R <= "001"; -- RA
+            when R2 =>
+                o_lights_R <= "011"; -- RA + RB
+            when R3 =>
+                o_lights_R <= "111"; -- RA + RB + RC
+
+            when HAZARD =>
+                o_lights_L <= "111";
+                o_lights_R <= "111";
+
+            when others =>
+                o_lights_L <= "000";
+                o_lights_R <= "000";
+        end case;
+    end process;
 	-----------------------------------------------------					   
 				  
 end thunderbird_fsm_arch;

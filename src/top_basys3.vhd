@@ -86,15 +86,56 @@ end top_basys3;
 architecture top_basys3_arch of top_basys3 is 
   
 	-- declare components
-
-  
+    component clock_divider is --declare clock
+        generic ( constant k_DIV : natural := 2 ); -- Defaulting clock hz in order to lower clock rate to 4hz later (used google for help)
+        port (
+            i_clk    : in  std_logic;
+            i_reset  : in  std_logic;
+            o_clk    : out std_logic
+            );
+    end component;
+    
+    component thunderbird_fsm is --declare fsm
+        port (
+            i_clk      : in  std_logic;
+            i_reset    : in  std_logic;
+            i_left     : in  std_logic;
+            i_right    : in  std_logic;
+            o_lights_L : out std_logic_vector(2 downto 0);
+            o_lights_R : out std_logic_vector(2 downto 0)
+        );
+    end component;
+    
+    signal slow_clk      : std_logic;
+    signal left_sig      : std_logic;
+    signal right_sig     : std_logic;
+    signal light_L       : std_logic_vector(2 downto 0);
+    signal light_R       : std_logic_vector(2 downto 0);
+    
 begin
 	-- PORT MAPS ----------------------------------------
-
-	
+    clkdiv_inst: clock_divider
+        generic map (k_DIV => 12500000)-- 100 MHz / 12.5M*2 = 4 Hz
+        port map (
+            i_clk   => clk,
+            i_reset => btnL,           -- clk_reset button
+            o_clk   => slow_clk
+        );
+    fsm: thunderbird_fsm
+        port map (
+            i_clk      => slow_clk,
+            i_reset    => btnR,        -- fsm_reset button
+            i_left     => sw(15),
+            i_right    => sw(0),
+            o_lights_L => light_L,
+            o_lights_R => light_R
+        );
 	
 	-- CONCURRENT STATEMENTS ----------------------------
-	
+	led(15 downto 13) <= light_L; -- LC, LB, LA
+    led(2) <= light_R(0);  -- RC
+    led(1) <= light_R(1);  -- RB
+    led(0) <= light_R(2);  -- RA
 	-- ground unused LEDs
 	-- leave unused switches UNCONNECTED
 	

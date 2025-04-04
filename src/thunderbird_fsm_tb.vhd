@@ -57,28 +57,101 @@ end thunderbird_fsm_tb;
 architecture test_bench of thunderbird_fsm_tb is 
 	
 	component thunderbird_fsm is 
---	  port(
-		
---	  );
+	  port (
+            i_clk      : in  std_logic;
+            i_reset    : in  std_logic;
+            i_left     : in  std_logic;
+            i_right    : in  std_logic;
+            o_lights_L : out std_logic_vector(2 downto 0);
+            o_lights_R : out std_logic_vector(2 downto 0)
+           );
 	end component thunderbird_fsm;
 
 	-- test I/O signals
-	
+	signal clk         : std_logic := '0';
+    signal reset       : std_logic := '0';
+    signal left        : std_logic := '0';
+    signal right       : std_logic := '0';
+    signal lights_L    : std_logic_vector(2 downto 0);
+    signal lights_R    : std_logic_vector(2 downto 0);
 	-- constants
-	
+	constant clk_period : time := 10 ns;
 	
 begin
 	-- PORT MAPS ----------------------------------------
-	
+	uut: thunderbird_fsm
+    port map (
+        i_clk      => clk,
+        i_reset    => reset,
+        i_left     => left,
+        i_right    => right,
+        o_lights_L => lights_L,
+        o_lights_R => lights_R
+    );
 	-----------------------------------------------------
 	
 	-- PROCESSES ----------------------------------------	
     -- Clock process ------------------------------------
-    
+    clk_process : process
+    begin
+        clk <= '0';
+        wait for clk_period / 2;
+        clk <= '1';
+        wait for clk_period / 2;
+    end process;
 	-----------------------------------------------------
 	
 	-- Test Plan Process --------------------------------
-	
+	testing_process : process
+    begin
+        report "Starting simulation..." severity note;
+
+        -- Apply reset
+        reset <= '1';
+        wait for 2 * clk_period;
+        reset <= '0';
+        wait for clk_period;
+
+        -- LEFT signal test
+        report "Testing LEFT turn signal" severity note;
+        left <= '1';
+        wait for 4 * clk_period;
+        left <= '0';
+
+        wait for 10 * clk_period;
+
+        -- RIGHT signal test
+        report "Testing RIGHT turn signal" severity note;
+        right <= '1';
+        wait for 4 * clk_period;
+        right <= '0';
+
+        wait for 10 * clk_period;
+
+        -- Hazard lights test (both left and right)
+        report "Testing HAZARD lights" severity note;
+        left <= '1';
+        right <= '1';
+        wait for clk_period;
+        left <= '0';
+        right <= '0';
+
+        wait for 10 * clk_period;
+
+        -- Reset in middle of sequence
+        report "Testing reset in middle of blinking sequence" severity note;
+        left <= '1';
+        wait for 2 * clk_period;
+        reset <= '1';
+        wait for clk_period;
+        reset <= '0';
+        left <= '0';
+
+        wait for 10 * clk_period;
+
+        report "Testbench completed." severity note;
+        wait;
+    end process;
 	-----------------------------------------------------	
 	
 end test_bench;
