@@ -133,9 +133,9 @@ begin
 	
 	-- CONCURRENT STATEMENTS ----------------------------
 	led(15 downto 13) <= light_L; -- LC, LB, LA
-    led(0) <= light_R(0); --RA
+    led(2) <= light_R(0); --RA
     led(1) <= light_R(1);
-    led(2) <= light_R(2);
+    led(0) <= light_R(2);
 	-- ground unused LEDs
 	-- leave unused switches UNCONNECTED
 	
